@@ -62,8 +62,8 @@ export function createQuery<
         Object.keys(reducers).reduce((result:any, reducer) => {
             result[reducer] = (state: QueryState<State>, payload: PayloadAction<any>) => 
             {
-                state.isLoading = false,
-                state.error = null
+                state.isLoading = false;
+                state.error = null;
                 return reducers[reducer](state, payload);
             }
         }, {});
@@ -94,9 +94,6 @@ export function createQuery<
         }
     });
 
-    const effects: Record<string, Function> = {};
-    const reducerNames = Object.keys(reducers);
-
     const createEffect = (actionName:string) => (
         payload: any,
     ): ThunkAction<void, ResultState, null, Action<string>> => async dispatch => {
@@ -109,7 +106,8 @@ export function createQuery<
         }
     }
 
-    reducerNames.forEach(reducerName => {
+    const effects: Record<string, Function> = {};
+    Object.keys(reducers).forEach(reducerName => {
         const effect = createEffect(reducerName);
         (effect as any).toString = () => reducerName;
         effects[reducerName] = effect;
