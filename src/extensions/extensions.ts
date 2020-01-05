@@ -22,11 +22,11 @@ export interface QueryOptions<
 export interface QuerySlice<
   State = any,
   CaseReducers extends SliceCaseReducersWithLoading<State> = SliceCaseReducersWithLoading<State>,
-  Thunks = any,
+  CaseReducersForThunks = any,
   ResultState = any
 > extends Slice<State, CaseReducers>{
     effects: {
-        [Type in keyof Thunks]: EnhancedThunkAction<void, ResultState, null, Action<string>>
+        [Type in keyof CaseReducersForThunks]: EnhancedThunkAction<void, ResultState, null, Action<string>>
     }
 }
 
@@ -38,16 +38,16 @@ interface LoadingReducers<State> {
 
 export type SliceCaseReducersWithLoading<State> = SliceCaseReducers<State> & LoadingReducers<State>;
 
-export type QueryState<State> = State & InternalQueryState;
-
 interface InternalQueryState {
     isLoading: boolean;
     error: string|null;
 }
 
+export type QueryState<State> = State & InternalQueryState;
+
 export type ReducersWithLoading<Reducers, State> = Reducers & LoadingReducers<State>;
 
-export interface EnhancedThunkAction<R, S, E, A extends Action<any>> extends ThunkAction<R, S , E, A>, Function {};
+export interface EnhancedThunkAction<R, S, E, A extends Action<any>> extends ThunkAction<R, S, E, A>, Function {};
 
 export function createQuery<
     State, 
@@ -92,7 +92,7 @@ export function createQuery<
     });
 
     const effects: Record<string, Function> = {};
-    const extraReducerNames = Object.keys(reducers);
+    const reducerNames = Object.keys(reducers);
 
     const createEffect = (actionName:string) => (
         payload: any,
@@ -106,9 +106,9 @@ export function createQuery<
         }
     }
 
-    extraReducerNames.forEach(reducerName => {
+    reducerNames.forEach(reducerName => {
         const effect = createEffect(reducerName);
-        (effect as any)["toString"] = () => reducerName;
+        (effect as any).toString = () => reducerName;
         effects[reducerName] = effect;
     });
 
@@ -120,6 +120,10 @@ export function createQuery<
         effects: effects as any 
     };
 };
+
+export function createCommand(query, ) {
+
+}
 
 interface Test {
     test: string
@@ -141,4 +145,6 @@ const query = createQuery({
         }
     },
 });
+
+
 
