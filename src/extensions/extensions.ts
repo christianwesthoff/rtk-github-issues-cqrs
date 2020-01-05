@@ -3,7 +3,6 @@ import {
     PayloadAction,
     CaseReducer, 
     SliceCaseReducers, 
-    CaseReducerWithPrepare,
     Action, 
     Slice, 
     ValidateSliceCaseReducers
@@ -32,7 +31,7 @@ export interface QuerySlice<
     }
 }
 
-export type LoadingReducers<State> = {
+interface LoadingReducers<State> {
     startLoading: CaseReducer<State>,
     loadingFailed: CaseReducer<State, PayloadAction<any>>,
     resetLoading: CaseReducer<State>
@@ -40,18 +39,16 @@ export type LoadingReducers<State> = {
 
 export type SliceCaseReducersWithLoading<State> = SliceCaseReducers<State> & LoadingReducers<State>;
 
-export type QueryState<State> = State & QueryStatus;
+export type QueryState<State> = State & InternalQueryState;
 
-export interface QueryStatus {
+interface InternalQueryState {
     isLoading: boolean;
     error: string|null;
 }
 
 export type ReducersWithLoading<Reducers, State> = Reducers & LoadingReducers<State>;
 
-export interface EnhancedThunkAction<R, S, E, A extends Action<any>> extends ThunkAction<R, S , E, A> {
-    toString: () => string;
-}
+export interface EnhancedThunkAction<R, S, E, A extends Action<any>> extends ThunkAction<R, S , E, A>, Function {};
 
 export function createQuery<
     State, 
@@ -80,15 +77,15 @@ export function createQuery<
         initialState: initalStateWithLoading,
         reducers: {
           ...prepareReducers(reducers),
-          startLoading: function(state: QueryStatus) {
+          startLoading: function(state: InternalQueryState) {
             state.isLoading = true,
             state.error = null
           },
-          loadingFailed: function (state: QueryStatus, action: PayloadAction<string>) {
+          loadingFailed: function (state: InternalQueryState, action: PayloadAction<string>) {
             state.isLoading = false;
             state.error = action.payload;
           },
-          resetLoading: function(state: QueryStatus) {
+          resetLoading: function(state: InternalQueryState) {
             state.isLoading = false,
             state.error = null
           },
@@ -136,7 +133,7 @@ const test: Test = {
 const query = createQuery({
     name: 'hallo',
     initialState: test,
-    request: () => new Promise((resolve, reject) => {
+    request: () => new Promise((resolve) => {
         resolve("Hello World");
     }),
     reducers: {
@@ -145,3 +142,4 @@ const query = createQuery({
         }
     },
 });
+
