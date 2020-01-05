@@ -174,5 +174,5 @@ const query = createQuery({
 });
 
 // TODO: Connect query to external side effects (i.e. external actions)
-// ---> redux middleware, useSubscription(...) see refractJS
+// ---> redux middleware, useSubscription(...) see refractJS api but not as complex and action based instead of observables to reduce complexity
 // TODO: Connect query to external effects (e.g. signalR etc.)
