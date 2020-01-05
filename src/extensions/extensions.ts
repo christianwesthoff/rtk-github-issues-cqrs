@@ -15,7 +15,7 @@ export interface QueryOptions<
 > {
     name: string, 
     initialState: State, 
-    request: (payload:any) => Promise<any>,
+    request: (action: string, payload:any) => Promise<any>,
     reducers: ValidateSliceCaseReducers<State, CR>
 }
 
@@ -99,7 +99,7 @@ export function createQuery<
     ): ThunkAction<void, ResultState, null, Action<string>> => async dispatch => {
         try {
             dispatch(slice.actions.startLoading());
-            const result = await request(payload);
+            const result = await request(actionName, payload);
             dispatch(slice.actions[actionName](result));
         } catch (err) {
             dispatch(slice.actions.loadingFailed(err));
@@ -123,9 +123,19 @@ export function createQuery<
     };
 };
 
+/**
+ * State normalization
+ */
 export interface NormalizedState<Key extends string|number|symbol, State> {
     byId: Record<Key, State>
     allIds: Array<Key>
+}
+
+export interface PessimisticNormalizedStateReducers<Key extends string|number|symbol, Payload, State> {
+    fetchAll: CaseReducer<NormalizedState<Key, State>, PayloadAction<Array<Payload>>>,
+    fetchBy: CaseReducer<NormalizedState<Key, State>, PayloadAction<Payload>>,
+    removeAll:  CaseReducer<NormalizedState<Key, State>>,
+    removeBy:  CaseReducer<NormalizedState<Key, State>, PayloadAction<Key>>,
 }
 
 // TODO: Connect query to commands
