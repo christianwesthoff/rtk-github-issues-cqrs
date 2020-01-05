@@ -136,10 +136,14 @@ export interface NormalizedState<Key extends string|number|symbol, State> {
 }
 
 export interface PessimisticNormalizedStateReducers<Key extends string|number|symbol, Payload, State> {
-    fetchAll: CaseReducer<NormalizedState<Key, State>, PayloadAction<Array<Payload>>>,
-    fetchBy: CaseReducer<NormalizedState<Key, State>, PayloadAction<Payload>>,
-    removeAll:  CaseReducer<NormalizedState<Key, State>>,
-    removeBy:  CaseReducer<NormalizedState<Key, State>, PayloadAction<Key>>,
+    effectReducers: {
+        fetchAll: CaseReducer<NormalizedState<Key, State>, PayloadAction<Array<Payload>>>,
+        fetchBy: CaseReducer<NormalizedState<Key, State>, PayloadAction<Payload>>,
+    },
+    reducers: {
+        removeAll:  CaseReducer<NormalizedState<Key, State>>,
+        removeBy:  CaseReducer<NormalizedState<Key, State>, PayloadAction<Key>>,
+    }
 }
 
 // TODO: Connect query to commands
