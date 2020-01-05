@@ -93,6 +93,7 @@ export function createQuery<
         }
     });
 
+    // TODO: type payload
     const createEffect = (actionName:string) => (
         payload: any,
     ): ThunkAction<void, ResultState, null, Action<string>> => async dispatch => {
@@ -121,6 +122,11 @@ export function createQuery<
         effects: effects as any 
     };
 };
+
+export interface NormalizedState<Key extends string|number|symbol, State> {
+    byId: Record<Key, State>
+    allIds: Array<Key>
+}
 
 // TODO: Connect query to commands
 export function createCommand(query, ) {
