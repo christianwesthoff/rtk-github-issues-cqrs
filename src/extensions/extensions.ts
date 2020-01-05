@@ -26,7 +26,7 @@ export interface QuerySlice<
   ResultState = any
 > extends Slice<State, CaseReducers>{
     effects: {
-        [Type in keyof CaseReducersForThunks]: EnhancedThunkAction<void, ResultState, null, Action<string>>
+        [Type in keyof CaseReducersForThunks]: ThunkAction<void, ResultState, null, Action<string>>
     }
 }
 
@@ -47,8 +47,6 @@ export type QueryState<State> = State & InternalQueryState;
 
 export type ReducersWithLoading<Reducers, State> = Reducers & LoadingReducers<State>;
 
-export interface EnhancedThunkAction<R, S, E, A extends Action<any>> extends ThunkAction<R, S, E, A>, Function {};
-
 export function createQuery<
     State, 
     CaseReducers extends SliceCaseReducers<QueryState<State>>, 
@@ -59,13 +57,13 @@ export function createQuery<
     const { name, initialState, request, reducers } = options;
 
     // monkeypatch reducers
-    const prepareReducers = (reducers:any):SliceCaseReducers<QueryState<State>> => 
-        Object.keys(reducers).reduce((result:any, reducerName:string) => {
+    const enhanceReducers = (reducers:SliceCaseReducers<State>):SliceCaseReducers<QueryState<State>> => 
+        Object.keys(reducers).reduce((result:any, reducerName) => {
             result[reducerName] = (state: QueryState<State>, payload: PayloadAction<any>) => 
             {
                 state.isLoading = false;
                 state.error = null;
-                return reducers[reducerName](state, payload);
+                return (reducers as any)[reducerName](state, payload);
             }
         }, {});
 
@@ -73,24 +71,24 @@ export function createQuery<
         ...initialState,
         isLoading: false,
         error: null
-    }
+    };
 
     const slice = createSlice<QueryState<State>, SliceCaseReducersWithLoading<QueryState<State>>>({
         name,
         initialState: initalStateWithLoading,
         reducers: {
-          ...prepareReducers(reducers),
+          ...enhanceReducers(reducers),
           startLoading: (state: InternalQueryState) => {
-            state.isLoading = true,
-            state.error = null
+            state.isLoading = true;
+            state.error = null;
           },
           loadingFailed: (state: InternalQueryState, action: PayloadAction<string>) => {
             state.isLoading = false;
             state.error = action.payload;
           },
           resetLoading: (state: InternalQueryState) => {
-            state.isLoading = false,
-            state.error = null
+            state.isLoading = false;
+            state.error = null;
           },
         }
     });
@@ -99,17 +97,18 @@ export function createQuery<
         payload: any,
     ): ThunkAction<void, ResultState, null, Action<string>> => async dispatch => {
         try {
-            dispatch(slice.actions.startLoading())
+            dispatch(slice.actions.startLoading());
             const result = await request(payload);
-            dispatch(slice.actions[actionName](result))
+            dispatch(slice.actions[actionName](result));
         } catch (err) {
             dispatch(slice.actions.loadingFailed(err));
         }
-    }
+    };
 
     const effects: Record<string, Function> = {};
     Object.keys(reducers).forEach(reducerName => {
         const effect = createEffect(reducerName);
+        // enhance thunks
         (effect as any).toString = () => reducerName;
         effects[reducerName] = effect;
     });
@@ -123,6 +122,7 @@ export function createQuery<
     };
 };
 
+// TODO: Connect query to commands
 export function createCommand(query, ) {
 
 }
@@ -147,6 +147,3 @@ const query = createQuery({
         }
     },
 });
-
-
-
