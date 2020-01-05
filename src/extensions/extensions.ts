@@ -10,76 +10,84 @@ import {
  } from '@reduxjs/toolkit'
 import { ThunkAction } from 'redux-thunk'
 
-export interface QueryState {
-    isLoading: boolean;
-    error: string|null;
-}
 
 export interface QueryOptions<
-  State extends QueryState = any,
+  State,
   CR extends SliceCaseReducers<State> = SliceCaseReducers<State>
 > {
     name: string, 
     initialState: State, 
-    promise: (payload:any) => Promise<any>,
+    request: (payload:any) => Promise<any>,
     reducers: ValidateSliceCaseReducers<State, CR>
 }
 
 export interface QuerySlice<
   State = any,
-  CaseReducers extends SliceCaseReducersWithLoadingStates<State> = SliceCaseReducersWithLoadingStates<State>,
+  CaseReducers extends SliceCaseReducersWithLoading<State> = SliceCaseReducersWithLoading<State>,
+  Thunks = any,
   ResultState = any
 > extends Slice<State, CaseReducers>{
     effects: {
-        [Type in keyof CaseReducers]: ThunkAction<void, ResultState, null, Action<string>>
+        [Type in keyof Thunks]: ThunkAction<void, ResultState, null, Action<string>>
     }
 }
 
-export type SliceCaseReducersWithLoadingStates<State> = {
-    [K: string]:
-      | CaseReducer<State, PayloadAction<any>>
-      | CaseReducerWithPrepare<State, PayloadAction<any>>,
-    ["startLoading"]: CaseReducer<State>,
-    ["loadingFailed"]: CaseReducer<State, PayloadAction<any>>,
-    ["resetLoading"]: CaseReducer<State>,
-  }
+export type LoadingReducers<State> = {
+    startLoading: CaseReducer<State>,
+    loadingFailed: CaseReducer<State, PayloadAction<any>>,
+    resetLoading: CaseReducer<State>
+}
+
+export type SliceCaseReducersWithLoading<State> = SliceCaseReducers<State> & LoadingReducers<State>;
+
+export type QueryState<State> = State & QueryStatus;
+
+export interface QueryStatus {
+    isLoading: boolean;
+    error: string|null;
+}
 
 export function createQuery<
-    State extends QueryState, 
-    CaseReducers extends SliceCaseReducers<State>, ResultState>(
+    State, 
+    CaseReducers extends SliceCaseReducers<QueryState<State>>, ResultState>(
         options: QueryOptions<State, CaseReducers>
-    ): QuerySlice<State, SliceCaseReducersWithLoadingStates<State>> {
+    ): QuerySlice<QueryState<State>, CaseReducers & LoadingReducers<QueryState<State>>, CaseReducers> {
 
-    const { name, initialState, promise, reducers } = options;
+    const { name, initialState, request, reducers } = options;
 
-    const prepareReducers = (reducers:any):SliceCaseReducers<State> => Object.assign({}, 
-        ...Object.keys(reducers).map(reducer => ({ [reducer]: function (state: QueryState, payload: PayloadAction<any>) {
+    const prepareReducers = (reducers:any):SliceCaseReducers<QueryState<State>> => Object.assign({}, 
+        ...Object.keys(reducers).map(reducer => ({ [reducer]: function (state: QueryState<State>, payload: PayloadAction<any>) {
             state.isLoading = false,
             state.error = null
             return reducers[reducer](state, payload);
         } })));
 
-    const slice = createSlice<State, SliceCaseReducersWithLoadingStates<State>>({
+    const initalStateWithLoading: QueryState<State> = {
+        ...initialState,
+        isLoading: false,
+        error: null
+    }
+
+    const slice = createSlice<QueryState<State>, SliceCaseReducersWithLoading<QueryState<State>>>({
         name,
-        initialState,
+        initialState: initalStateWithLoading,
         reducers: {
           ...prepareReducers(reducers),
-          startLoading: function(state: QueryState) {
+          startLoading: function(state: QueryStatus) {
             state.isLoading = true,
             state.error = null
           },
-          loadingFailed: function (state: QueryState, action: PayloadAction<string>) {
+          loadingFailed: function (state: QueryStatus, action: PayloadAction<string>) {
             state.isLoading = false;
             state.error = action.payload;
           },
-          resetLoading: function(state: QueryState) {
+          resetLoading: function(state: QueryStatus) {
             state.isLoading = false,
             state.error = null
           },
         }
     });
 
-    const { startLoading, loadingFailed } = slice.actions;
     const effects: Record<string, Function> = {};
     const extraReducerNames = Object.keys(reducers);
 
@@ -87,11 +95,11 @@ export function createQuery<
         payload: any,
     ): ThunkAction<void, ResultState, null, Action<string>> => async dispatch => {
         try {
-            dispatch(startLoading())
-            const result = await promise(payload);
+            dispatch(slice.actions.startLoading())
+            const result = await request(payload);
             dispatch(slice.actions[actionName](result))
         } catch (err) {
-            dispatch(loadingFailed(err));
+            dispatch(slice.actions.loadingFailed(err));
         }
     }
 
@@ -99,5 +107,32 @@ export function createQuery<
         effects[reducerName] = createEffect(reducerName);
     });
 
-    return { ...slice, effects: effects as any };
+    return { 
+        name: slice.name, 
+        reducer: slice.reducer, 
+        actions: slice.actions as any, 
+        caseReducers: slice.caseReducers as any, 
+        effects: effects as any 
+    };
 };
+
+interface Test {
+    test: string
+}
+
+const test: Test = {
+    test: ''
+}
+
+const query = createQuery({
+    name: 'hallo',
+    initialState: test,
+    reducers: {
+        test: function(state:QueryState<Test>, payload:PayloadAction<string>) {
+            state.test = payload.payload;
+        }
+    },
+    request: () => new Promise((resolve, reject) => {
+        resolve("Hello World");
+    })
+});
