@@ -9,7 +9,6 @@ import {
  } from '@reduxjs/toolkit'
 import { ThunkAction } from 'redux-thunk'
 
-
 export interface QueryOptions<
   State,
   CR extends SliceCaseReducers<State> = SliceCaseReducers<State>
