@@ -21,7 +21,7 @@ export interface QueryOptions<
 > {
     name: string, 
     initialState: State, 
-    fetch: (payload:any) => Promise<any>,
+    promise: (payload:any) => Promise<any>,
     reducers: ValidateSliceCaseReducers<State, CR>
 }
 
@@ -50,7 +50,7 @@ export function createQuery<
         options: QueryOptions<State, CaseReducers>
     ): QuerySlice<State, SliceCaseReducersWithLoadingStates<State>> {
 
-    const { name, initialState, fetch, reducers } = options;
+    const { name, initialState, promise, reducers } = options;
 
     const prepareReducers = (reducers:any):SliceCaseReducers<State> => Object.assign({}, 
         ...Object.keys(reducers).map(reducer => ({ [reducer]: function (state: QueryState, payload: PayloadAction<any>) {
@@ -88,7 +88,7 @@ export function createQuery<
     ): ThunkAction<void, ResultState, null, Action<string>> => async dispatch => {
         try {
             dispatch(startLoading())
-            const result = await fetch(payload);
+            const result = await promise(payload);
             dispatch(slice.actions[actionName](result))
         } catch (err) {
             dispatch(loadingFailed(err));
