@@ -49,6 +49,7 @@ export type QueryState<State> = State & InternalQueryState;
 
 export type ReducersWithLoading<Reducers, State> = Reducers & LoadingReducers<State>;
 
+// TODO: type safety for payloads
 export function createQuery<
     State, 
     CaseReducers extends SliceCaseReducers<QueryState<State>>,
@@ -147,8 +148,8 @@ export interface PessimisticNormalizedStateReducers<Key extends string|number|sy
 }
 
 // TODO: Connect query to commands
-export function createCommand(query, ) {
-
+export function createCommand(query) {
+ // TODO
 }
 
 interface Test {
@@ -171,3 +172,7 @@ const query = createQuery({
         }
     }
 });
+
+// TODO: Connect query to external side effects (i.e. external actions)
+// ---> redux middleware, useSubscription(...) see refractJS
+// TODO: Connect query to external effects (e.g. signalR etc.)
