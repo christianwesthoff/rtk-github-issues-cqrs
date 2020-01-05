@@ -58,12 +58,15 @@ export function createQuery<
 
     const { name, initialState, request, reducers } = options;
 
-    const prepareReducers = (reducers:any):SliceCaseReducers<QueryState<State>> => Object.assign({}, 
-        ...Object.keys(reducers).map(reducer => ({ [reducer]: function (state: QueryState<State>, payload: PayloadAction<any>) {
-            state.isLoading = false,
-            state.error = null
-            return reducers[reducer](state, payload);
-        } })));
+    const prepareReducers = (reducers:any):SliceCaseReducers<QueryState<State>> => 
+        Object.keys(reducers).reduce((result:any, reducer) => {
+            result[reducer] = (state: QueryState<State>, payload: PayloadAction<any>) => 
+            {
+                state.isLoading = false,
+                state.error = null
+                return reducers[reducer](state, payload);
+            }
+        }, {});
 
     const initalStateWithLoading: QueryState<State> = {
         ...initialState,
