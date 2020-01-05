@@ -28,7 +28,7 @@ export interface QuerySlice<
   ResultState = any
 > extends Slice<State, CaseReducers>{
     effects: {
-        [Type in keyof Thunks]: ThunkAction<void, ResultState, null, Action<string>>
+        [Type in keyof Thunks]: EnhancedThunkAction<void, ResultState, null, Action<string>>
     }
 }
 
@@ -48,6 +48,10 @@ export interface QueryStatus {
 }
 
 export type ReducersWithLoading<Reducers, State> = Reducers & LoadingReducers<State>;
+
+export interface EnhancedThunkAction<R, S, E, A extends Action<any>> extends ThunkAction<R, S , E, A> {
+    toString: () => string;
+}
 
 export function createQuery<
     State, 
@@ -107,7 +111,9 @@ export function createQuery<
     }
 
     extraReducerNames.forEach(reducerName => {
-        effects[reducerName] = createEffect(reducerName);
+        const effect = createEffect(reducerName);
+        (effect as any)["toString"] = () => reducerName;
+        effects[reducerName] = effect;
     });
 
     return { 
@@ -130,12 +136,12 @@ const test: Test = {
 const query = createQuery({
     name: 'hallo',
     initialState: test,
+    request: () => new Promise((resolve, reject) => {
+        resolve("Hello World");
+    }),
     reducers: {
         test: function(state:QueryState<Test>, payload:PayloadAction<string>) {
             state.test = payload.payload;
         }
     },
-    request: () => new Promise((resolve, reject) => {
-        resolve("Hello World");
-    })
 });
