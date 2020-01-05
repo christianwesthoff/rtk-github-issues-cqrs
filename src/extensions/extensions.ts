@@ -12,12 +12,14 @@ import { ThunkAction } from 'redux-thunk'
 // TODO: distinct between effect and normal reducers
 export interface QueryOptions<
   State,
-  CR extends SliceCaseReducers<State> = SliceCaseReducers<State>
+  CR extends SliceCaseReducers<State> = SliceCaseReducers<State>,
+  CR1 extends SliceCaseReducers<State> = SliceCaseReducers<State>
 > {
     name: string, 
     initialState: State, 
     request: (action: string, payload:any) => Promise<any>,
-    reducers: ValidateSliceCaseReducers<State, CR>
+    reducers?: ValidateSliceCaseReducers<State, CR>,
+    effectReducers?: ValidateSliceCaseReducers<State, CR1>
 }
 
 export interface QuerySlice<
@@ -50,12 +52,13 @@ export type ReducersWithLoading<Reducers, State> = Reducers & LoadingReducers<St
 
 export function createQuery<
     State, 
-    CaseReducers extends SliceCaseReducers<QueryState<State>>, 
+    CaseReducers extends SliceCaseReducers<QueryState<State>>,
+    CaseReducers1 extends SliceCaseReducers<QueryState<State>>, 
     ResultState = any>(
-        options: QueryOptions<State, CaseReducers>
-    ): QuerySlice<QueryState<State>, ReducersWithLoading<CaseReducers, QueryState<State>>, CaseReducers, ResultState> {
+        options: QueryOptions<State, CaseReducers, CaseReducers1>
+    ): QuerySlice<QueryState<State>, ReducersWithLoading<CaseReducers & CaseReducers1, QueryState<State>>, CaseReducers1, ResultState> {
 
-    const { name, initialState, request, reducers } = options;
+    const { name, initialState, request, reducers, effectReducers } = options;
 
     // monkeypatch reducers
     const enhanceReducers = (reducers:SliceCaseReducers<State>):SliceCaseReducers<QueryState<State>> => 
@@ -78,7 +81,7 @@ export function createQuery<
         name,
         initialState: initalStateWithLoading,
         reducers: {
-          ...enhanceReducers(reducers),
+          ...enhanceReducers(effectReducers),
           startLoading: (state: InternalQueryState) => {
             state.isLoading = true;
             state.error = null;
@@ -91,6 +94,7 @@ export function createQuery<
             state.isLoading = false;
             state.error = null;
           },
+          ...reducers
         }
     });
 
@@ -108,7 +112,7 @@ export function createQuery<
     };
 
     const effects: Record<string, Function> = {};
-    Object.keys(reducers).forEach(reducerName => {
+    Object.keys(effectReducers).forEach(reducerName => {
         const effect = createEffect(reducerName);
         // enhance thunks
         (effect as any).toString = () => reducerName;
@@ -158,9 +162,9 @@ const query = createQuery({
     request: () => new Promise((resolve) => {
         resolve("Hello World");
     }),
-    reducers: {
+    effectReducers: {
         test: function(state:QueryState<Test>, payload:PayloadAction<string>) {
             state.test = payload.payload;
         }
-    },
+    }
 });
