@@ -47,11 +47,14 @@ export interface QueryStatus {
     error: string|null;
 }
 
+export type ReducersWithLoading<Reducers, State> = Reducers & LoadingReducers<State>;
+
 export function createQuery<
     State, 
-    CaseReducers extends SliceCaseReducers<QueryState<State>>, ResultState>(
+    CaseReducers extends SliceCaseReducers<QueryState<State>>, 
+    ResultState = any>(
         options: QueryOptions<State, CaseReducers>
-    ): QuerySlice<QueryState<State>, CaseReducers & LoadingReducers<QueryState<State>>, CaseReducers> {
+    ): QuerySlice<QueryState<State>, ReducersWithLoading<CaseReducers, QueryState<State>>, CaseReducers, ResultState> {
 
     const { name, initialState, request, reducers } = options;
 
