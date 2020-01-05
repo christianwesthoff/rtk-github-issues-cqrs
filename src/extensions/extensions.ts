@@ -58,13 +58,14 @@ export function createQuery<
 
     const { name, initialState, request, reducers } = options;
 
+    // monkeypatch reducers
     const prepareReducers = (reducers:any):SliceCaseReducers<QueryState<State>> => 
-        Object.keys(reducers).reduce((result:any, reducer) => {
-            result[reducer] = (state: QueryState<State>, payload: PayloadAction<any>) => 
+        Object.keys(reducers).reduce((result:any, reducerName:string) => {
+            result[reducerName] = (state: QueryState<State>, payload: PayloadAction<any>) => 
             {
                 state.isLoading = false;
                 state.error = null;
-                return reducers[reducer](state, payload);
+                return reducers[reducerName](state, payload);
             }
         }, {});
 
@@ -79,15 +80,15 @@ export function createQuery<
         initialState: initalStateWithLoading,
         reducers: {
           ...prepareReducers(reducers),
-          startLoading: function(state: InternalQueryState) {
+          startLoading: (state: InternalQueryState) => {
             state.isLoading = true,
             state.error = null
           },
-          loadingFailed: function (state: InternalQueryState, action: PayloadAction<string>) {
+          loadingFailed: (state: InternalQueryState, action: PayloadAction<string>) => {
             state.isLoading = false;
             state.error = action.payload;
           },
-          resetLoading: function(state: InternalQueryState) {
+          resetLoading: (state: InternalQueryState) => {
             state.isLoading = false,
             state.error = null
           },
