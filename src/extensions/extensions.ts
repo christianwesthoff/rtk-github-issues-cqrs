@@ -157,7 +157,7 @@ export interface NormalizedState<Key extends string|number|symbol, State> {
 }
 
 export type NormalizedStateReducers<Payload, State, Key extends string|number|symbol> = {
-    effectReducers?: {
+    effectReducers: {
         retrieveAll: CaseReducer<NormalizedState<Key, State>, PayloadAction<Array<Payload>>>,
         retrieveMany: CaseReducer<NormalizedState<Key, State>, PayloadAction<Array<Payload>>>
         retrieveOne: CaseReducer<NormalizedState<Key, State>, PayloadAction<Payload>>
