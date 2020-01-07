@@ -128,6 +128,15 @@ export function createQuery<
 };
 
 /**
+ * Helpers
+ */
+function filterObjectByKey<E, K extends string|number|symbol>(obj:any, f:(k:K) => boolean):Record<K, E> {
+    return Object.entries(obj)
+        .filter(([key]) => f(key as K))
+        .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}) as Record<K, E>
+}
+
+/**
  * State normalization
  */
 export interface NormalizedState<Key extends string|number|symbol, State> {
@@ -135,14 +144,40 @@ export interface NormalizedState<Key extends string|number|symbol, State> {
     allIds: Array<Key>
 }
 
-export interface PessimisticNormalizedStateReducers<Key extends string|number|symbol, Payload, State> {
+export type NormalizedStateReducers<Payload, State, Key extends string|number|symbol> = {
     effectReducers: {
-        fetchAll: CaseReducer<NormalizedState<Key, State>, PayloadAction<Array<Payload>>>,
-        fetchBy: CaseReducer<NormalizedState<Key, State>, PayloadAction<Payload>>,
+        retrieveAll: CaseReducer<NormalizedState<Key, State>, PayloadAction<Array<Payload>>>,
+        retrieveBy: CaseReducer<NormalizedState<Key, State>, PayloadAction<Payload|Array<Payload>>>
     },
-    reducers: {
-        removeAll:  CaseReducer<NormalizedState<Key, State>>,
-        removeBy:  CaseReducer<NormalizedState<Key, State>, PayloadAction<Key>>,
+    reducers?: {
+        removeAll?:  CaseReducer<NormalizedState<Key, State>>,
+        removeBy?:  CaseReducer<NormalizedState<Key, State>, PayloadAction<Key>>
+    }
+}
+
+export function createNormalizedStateReducers<Payload, State, Key extends string|number|symbol>(
+    payloadToState:(payload:Payload|Array<Payload>) => State, 
+    payloadToKey:(payload:Payload|Array<Payload>) => Key
+    ): NormalizedStateReducers<Payload, State, Key> {
+    return {
+        effectReducers: {
+            retrieveBy: function(state, action) {
+                if (Array.isArray(action.payload)) {
+                    state.byId = Object.entries(state.byId)
+                        .filter(([id]) => !(action.payload as Array<Payload>).map(e => payloadToKey(e)).includes(id as Key))
+                        .reduce<any>((acc, [id, val]) => ({ ...acc, [id]: val }), {});
+                    state.allIds = state.allIds.filter(id => !(action.payload as Array<Payload>).map(e => payloadToKey(e)).includes(id as Key));
+                    return;
+                }
+                state.byId = Object.entries(state.byId)
+                        .filter(([id]) => payloadToKey(action.payload as Payload) !== id)
+                        .reduce<any>((acc, [id, val]) => ({ ...acc, [id]: val }), {});
+                state.allIds = state.allIds.filter(id => id !== payloadToKey(action.payload));
+            },
+            retrieveAll: function(state, action) {
+                
+            }
+        }
     }
 }
 
