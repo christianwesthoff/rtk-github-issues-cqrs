@@ -49,7 +49,6 @@ export type QueryState<State> = State & InternalQueryState;
 
 export type ReducersWithLoading<Reducers, State> = Reducers & LoadingReducers<State>;
 
-// TODO: type safety for payloads
 export function createQuery<
     State, 
     CaseReducers extends SliceCaseReducers<QueryState<State>>,
@@ -131,10 +130,22 @@ export function createQuery<
 /**
  * Helpers
  */
-function filterObjectByKey<E, K extends string|number|symbol>(obj:any, f:(k:K) => boolean):Record<K, E> {
+function filterObject(obj:any, keyFn:(key:any) => boolean):any {
     return Object.entries(obj)
-        .filter(([key]) => f(key as K))
-        .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}) as Record<K, E>
+        .filter(([key]) => keyFn(key))
+        .reduce((res, [key, value]) => ({ ...res, [key]: value }), {});
+}
+
+function assignObject(obj:any, arr:Array<any>, keyFn:(key:any) => any, valFn:(key:any) => any):any {
+    return arr.map(entry => (obj[keyFn(entry)] = valFn(entry)));
+}
+
+function arrayToObject(arr:Array<any>, keyFn:(key:any) => any, valFn:(key:any) => any):any {
+    return arr.reduce((res, entry) => ({ ...res, [keyFn(entry)]: valFn(entry) }), {});
+}
+
+function appendIfNotExists(arr:Array<any>, entries:Array<any>):Array<any> {
+    return arr.concat(entries.filter(entry => !arr.includes(entry)));
 }
 
 /**
@@ -146,45 +157,57 @@ export interface NormalizedState<Key extends string|number|symbol, State> {
 }
 
 export type NormalizedStateReducers<Payload, State, Key extends string|number|symbol> = {
-    effectReducers: {
+    effectReducers?: {
         retrieveAll: CaseReducer<NormalizedState<Key, State>, PayloadAction<Array<Payload>>>,
-        retrieveBy: CaseReducer<NormalizedState<Key, State>, PayloadAction<Payload|Array<Payload>>>
+        retrieveMany: CaseReducer<NormalizedState<Key, State>, PayloadAction<Array<Payload>>>
+        retrieveOne: CaseReducer<NormalizedState<Key, State>, PayloadAction<Payload>>
     },
-    reducers?: {
-        removeAll?:  CaseReducer<NormalizedState<Key, State>>,
-        removeBy?:  CaseReducer<NormalizedState<Key, State>, PayloadAction<Key>>
+    reducers: {
+        removeAll:  CaseReducer<NormalizedState<Key, State>>,
+        removeMany:  CaseReducer<NormalizedState<Key, State>, PayloadAction<Array<Key>>>
+        removeOne:  CaseReducer<NormalizedState<Key, State>, PayloadAction<Key>>
     }
 }
 
 export function createNormalizedStateReducers<Payload, State, Key extends string|number|symbol>(
-    payloadToState:(payload:Payload|Array<Payload>) => State, 
-    payloadToKey:(payload:Payload|Array<Payload>) => Key
+        payloadToState:(payload:Payload|Array<Payload>) => State, 
+        payloadToKey:(payload:Payload|Array<Payload>) => Key
     ): NormalizedStateReducers<Payload, State, Key> {
     return {
-        effectReducers: {
-            retrieveBy: function(state, action) {
-                if (Array.isArray(action.payload)) {
-                    state.byId = Object.entries(state.byId)
-                        .filter(([id]) => !(action.payload as Array<Payload>).map(e => payloadToKey(e)).includes(id as Key))
-                        .reduce<any>((acc, [id, val]) => ({ ...acc, [id]: val }), {});
-                    state.allIds = state.allIds.filter(id => !(action.payload as Array<Payload>).map(e => payloadToKey(e)).includes(id as Key));
-                    return;
-                }
-                state.byId = Object.entries(state.byId)
-                        .filter(([id]) => payloadToKey(action.payload as Payload) !== id)
-                        .reduce<any>((acc, [id, val]) => ({ ...acc, [id]: val }), {});
-                state.allIds = state.allIds.filter(id => id !== payloadToKey(action.payload));
+        reducers: {
+            removeAll: function(state) {
+                state.byId = {} as any;
+                state.allIds = [];
             },
+            removeMany: function(state, action) {
+                state.byId = filterObject(state.byId, id => !action.payload.includes(id as Key));
+                state.allIds = state.allIds.filter(id => !action.payload.includes(id as Key));
+            },
+            removeOne: function(state, action) {
+                state.byId = filterObject(state.byId, id => action.payload !== id)
+                state.allIds = state.allIds.filter(id => id !== action.payload);
+            }
+        },
+        effectReducers: {
             retrieveAll: function(state, action) {
-                
+                state.byId = arrayToObject(action.payload, payload => payloadToKey(payload), payload => payloadToState(payload));
+                state.allIds = action.payload.map(payload => payloadToKey(payload) as any);
+            },
+            retrieveMany: function(state, action) {
+                state.byId = assignObject(state.byId, action.payload, payload => payloadToKey(payload), payload => payloadToState(payload));
+                state.allIds = appendIfNotExists(state.allIds, action.payload.map(payload => payloadToKey(payload)));
+            },
+            retrieveOne: function(state, action) {
+                state.byId = assignObject(state.byId, [action.payload], payload => payloadToKey(payload), payload => payloadToState(payload));
+                state.allIds = appendIfNotExists(state.allIds, [payloadToKey(action.payload)]);
             }
         }
     }
 }
 
 // TODO: Connect query to commands
-export function createCommand(query) {
- // TODO
+export function createCommand(query, ) {
+
 }
 
 interface Test {
@@ -207,7 +230,3 @@ const query = createQuery({
         }
     }
 });
-
-// TODO: Connect query to external side effects (i.e. external actions)
-// ---> redux middleware, useSubscription(...) see refractJS api but not as complex and action based instead of observables to reduce complexity
-// TODO: Connect query to external effects (e.g. signalR etc.)
