@@ -128,23 +128,23 @@ export function createQuery<
 };
 
 /**
- * Helpers
+ * Reducing helpers
  */
-function filterObject(obj:any, keyFn:(key:any) => boolean):any {
+export function filterObject(obj:any, keyFn:(key:any) => boolean):any {
     return Object.entries(obj)
         .filter(([key]) => keyFn(key))
         .reduce((res, [key, value]) => ({ ...res, [key]: value }), {});
 }
 
-function assignObject(obj:any, arr:Array<any>, keyFn:(key:any) => any, valFn:(key:any) => any):any {
+export function assignObject(obj:any, arr:Array<any>, keyFn:(key:any) => any, valFn:(key:any) => any):any {
     return arr.map(entry => (obj[keyFn(entry)] = valFn(entry)));
 }
 
-function arrayToObject(arr:Array<any>, keyFn:(key:any) => any, valFn:(key:any) => any):any {
+export function arrayToObject(arr:Array<any>, keyFn:(key:any) => any, valFn:(key:any) => any):any {
     return arr.reduce((res, entry) => ({ ...res, [keyFn(entry)]: valFn(entry) }), {});
 }
 
-function appendIfNotExists(arr:Array<any>, entries:Array<any>):Array<any> {
+export function appendIfNotExists(arr:Array<any>, entries:Array<any>):Array<any> {
     return arr.concat(entries.filter(entry => !arr.includes(entry)));
 }
 
