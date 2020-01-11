@@ -12,14 +12,14 @@ import { ThunkAction } from 'redux-thunk'
 
 export interface QueryOptions<
   State,
-  CR extends SliceCaseReducers<State> = SliceCaseReducers<State>,
-  CR1 extends SliceCaseReducers<State> = SliceCaseReducers<State>
+  CaseReducers extends SliceCaseReducers<State> = SliceCaseReducers<State>,
+  EffectCaseReducers extends SliceCaseReducers<State> = SliceCaseReducers<State>
 > {
     name: string, 
     initialState: State, 
     request: (action: string, payload:any) => Promise<any>,
-    reducers?: ValidateSliceCaseReducers<State, CR>,
-    effectReducers?: ValidateSliceCaseReducers<State, CR1>
+    reducers?: ValidateSliceCaseReducers<State, CaseReducers>,
+    effectReducers?: ValidateSliceCaseReducers<State, EffectCaseReducers>
 }
 
 export interface QuerySlice<
@@ -149,15 +149,14 @@ export function filterObject<T, K extends string|number|symbol>(obj:T, keyFn:(ke
 }
 
 export function assignObjectByArray<T, K extends string|number|symbol>(obj:T, arr:Array<any>, keyFn:(key:any) => K, valFn:(key:any) => any):T {
-    arr.map(entry => ((obj as any)[keyFn(entry as K)] = valFn(entry)));
-    return obj;
+    return arr.reduce((res, entry) => ({ ...res, [keyFn(entry)]: valFn(entry) }), obj);
 }
 
-export function arrayToObject<T, K extends string|number|symbol>(arr:Array<any>, keyFn:(key:any) => any, valFn:(key:any) => any):any {
+export function arrayToObject<T, K extends string|number|symbol>(arr:Array<any>, keyFn:(key:any) => K, valFn:(key:any) => any):T {
     return arr.reduce((res, entry) => ({ ...res, [keyFn(entry)]: valFn(entry) }), {});
 }
 
-export function appendIfNotExists(arr:Array<any>, entries:Array<any>):Array<any> {
+export function appendIfNotExists<T>(arr:Array<T>, entries:Array<T>):Array<T> {
     return arr.concat(entries.filter(entry => !arr.includes(entry)));
 }
 
@@ -208,11 +207,11 @@ export function createNormalizedStateReducers<Payload, State, Key extends string
             },
             retrieveMany: function(state, action) {
                 state.byId = assignObjectByArray(state.byId, action.payload, payload => payloadToKey(payload), payload => payloadToState(payload));
-                state.allIds = appendIfNotExists(state.allIds, action.payload.map(payload => payloadToKey(payload)));
+                state.allIds = appendIfNotExists(state.allIds, action.payload.map(payload => payloadToKey(payload)) as any);
             },
             retrieveOne: function(state, action) {
                 state.byId = assignObjectByArray(state.byId, [action.payload], payload => payloadToKey(payload), payload => payloadToState(payload));
-                state.allIds = appendIfNotExists(state.allIds, [payloadToKey(action.payload)]);
+                state.allIds = appendIfNotExists(state.allIds, [payloadToKey(action.payload) as any]);
             }
         }
     }
