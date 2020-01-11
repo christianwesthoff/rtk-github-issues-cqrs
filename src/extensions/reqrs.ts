@@ -220,7 +220,7 @@ export function createNormalizedStateReducers<Payload, State, Key extends string
 export function createInitalNormalizedState<State, Key extends string|number|symbol>():NormalizedState<State, Key> {
     return {
         byId: {} as Record<Key, State>,
-        allIds: [] 
+        allIds: [] as Array<Key>
     };
 }
 
