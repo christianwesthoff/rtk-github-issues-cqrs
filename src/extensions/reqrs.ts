@@ -70,14 +70,14 @@ export function createQuery<
 
     // monkeypatch reducers
     const enhanceReducers = (reducers:SliceCaseReducers<State>):SliceCaseReducers<QueryState<State>> => 
-        Object.keys(reducers).reduce((result:any, reducerName) => {
-            result[reducerName] = (state: QueryState<State>, payload: PayloadAction<any>) => 
+        Object.keys(reducers).reduce((res:any, reducerName) => ({ ...res, 
+            [reducerName]: (state: QueryState<State>, payload: PayloadAction<any>) => 
             {
+                (reducers as any)[reducerName](state, payload);
                 state.isLoading = false;
                 state.error = null;
-                return (reducers as any)[reducerName](state, payload);
             }
-        }, {});
+        }), {});
 
     const initalStateWithLoading: QueryState<State> = {
         ...initialState,
