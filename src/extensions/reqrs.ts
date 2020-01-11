@@ -3,6 +3,7 @@ import {
     PayloadAction,
     CaseReducer, 
     SliceCaseReducers, 
+    CaseReducerWithPrepare,
     Action, 
     Slice, 
     ValidateSliceCaseReducers
@@ -11,31 +12,31 @@ import { ThunkAction } from 'redux-thunk'
 
 export interface QueryOptions<
   State,
-  CR extends SliceCaseReducers<QueryState<State>> = SliceCaseReducers<QueryState<State>>,
-  CR1 extends SliceCaseReducers<QueryState<State>> = SliceCaseReducers<QueryState<State>>
+  CR extends SliceCaseReducers<State> = SliceCaseReducers<State>,
+  CR1 extends SliceCaseReducers<State> = SliceCaseReducers<State>
 > {
     name: string, 
     initialState: State, 
     request: (action: string, payload:any) => Promise<any>,
-    reducers?: ValidateSliceCaseReducers<QueryState<State>, CR>,
-    effectReducers?: ValidateSliceCaseReducers<QueryState<State>, CR1>
+    reducers?: ValidateSliceCaseReducers<State, CR>,
+    effectReducers?: ValidateSliceCaseReducers<State, CR1>
 }
 
 export interface QuerySlice<
   State = any,
-  CaseReducers extends SliceCaseReducersWithLoading<QueryState<State>> = SliceCaseReducersWithLoading<QueryState<State>>,
-  EffectCaseReducers extends SliceCaseReducers<QueryState<State>> = SliceCaseReducers<QueryState<State>>,
+  CaseReducers extends SliceCaseReducersWithLoading<State> = SliceCaseReducersWithLoading<State>,
+  EffectCaseReducers extends SliceCaseReducers<State> = SliceCaseReducers<State>,
   ResultState = any
-> extends Slice<QueryState<State>, CaseReducers>{
+> extends Slice<State, CaseReducers>{
     effects: {
         [Type in keyof EffectCaseReducers]: ThunkAction<void, ResultState, null, Action<string>>
     }
 }
 
 interface LoadingReducers<State> {
-    startLoading: CaseReducer<State>,
+    loadingStart: CaseReducer<State>,
     loadingFailed: CaseReducer<State, PayloadAction<any>>,
-    resetLoading: CaseReducer<State>
+    loadingReset: CaseReducer<State>
 }
 
 export type SliceCaseReducersWithLoading<State> = SliceCaseReducers<State> & LoadingReducers<State>;
@@ -49,18 +50,26 @@ export type QueryState<State> = State & InternalQueryState;
 
 export type ReducersWithLoading<Reducers, State> = Reducers & LoadingReducers<State>;
 
+export type ExtractReducers<Reducers, State> = {
+    [Type in keyof Reducers]: 
+        | CaseReducer<State, PayloadAction<any>>
+        | CaseReducerWithPrepare<State, PayloadAction<any>>
+}
+
 export function createQuery<
     State, 
-    CaseReducers extends SliceCaseReducers<QueryState<State>>,
-    EffectCaseReducers extends SliceCaseReducers<QueryState<State>>, 
+    CaseReducers extends SliceCaseReducers<State>,
+    EffectCaseReducers extends SliceCaseReducers<State>, 
     ResultState = any>(
         options: QueryOptions<State, CaseReducers, EffectCaseReducers>
-    ): QuerySlice<QueryState<State>, ReducersWithLoading<CaseReducers & EffectCaseReducers, QueryState<State>>, EffectCaseReducers, ResultState> {
+    ): QuerySlice<QueryState<State>, 
+    ReducersWithLoading<ExtractReducers<CaseReducers & EffectCaseReducers, QueryState<State>>, 
+    QueryState<State>>, ExtractReducers<EffectCaseReducers, QueryState<State>>, ResultState> {
 
     const { name, initialState, request, reducers, effectReducers } = options;
 
     // monkeypatch reducers
-    const enhanceReducers = (reducers:SliceCaseReducers<QueryState<State>>):SliceCaseReducers<QueryState<State>> => 
+    const enhanceReducers = (reducers:SliceCaseReducers<State>):SliceCaseReducers<QueryState<State>> => 
         Object.keys(reducers).reduce((result:any, reducerName) => {
             result[reducerName] = (state: QueryState<State>, payload: PayloadAction<any>) => 
             {
@@ -82,7 +91,7 @@ export function createQuery<
         initialState: initalStateWithLoading,
         reducers: {
             ...enhancedReducers,
-          startLoading: (state: InternalQueryState) => {
+          loadingStart: (state: InternalQueryState) => {
             state.isLoading = true;
             state.error = null;
           },
@@ -90,7 +99,7 @@ export function createQuery<
             state.isLoading = false;
             state.error = action.payload;
           },
-          resetLoading: (state: InternalQueryState) => {
+          loadingReset: (state: InternalQueryState) => {
             state.isLoading = false;
             state.error = null;
           },
@@ -103,7 +112,7 @@ export function createQuery<
         payload: any,
     ): ThunkAction<void, ResultState, null, Action<string>> => async dispatch => {
         try {
-            dispatch(slice.actions.startLoading());
+            dispatch(slice.actions.loadingStart());
             const result = await request(actionName, payload);
             dispatch(slice.actions[actionName](result));
         } catch (err) {
@@ -133,17 +142,18 @@ export function createQuery<
 /**
  * Reducing helpers
  */
-export function filterObject(obj:any, keyFn:(key:any) => boolean):any {
+export function filterObject<T, K extends string|number|symbol>(obj:T, keyFn:(key:K) => boolean):T {
     return Object.entries(obj)
-        .filter(([key]) => keyFn(key))
-        .reduce((res, [key, value]) => ({ ...res, [key]: value }), {});
+        .filter(([key]) => keyFn(key as K))
+        .reduce((res, [key, value]) => ({ ...res, [key]: value }), {}) as T;
 }
 
-export function assignObject(obj:any, arr:Array<any>, keyFn:(key:any) => any, valFn:(key:any) => any):any {
-    return arr.map(entry => (obj[keyFn(entry)] = valFn(entry)));
+export function assignObjectByArray<T, K extends string|number|symbol>(obj:T, arr:Array<any>, keyFn:(key:any) => K, valFn:(key:any) => any):T {
+    arr.map(entry => ((obj as any)[keyFn(entry as K)] = valFn(entry)));
+    return obj;
 }
 
-export function arrayToObject(arr:Array<any>, keyFn:(key:any) => any, valFn:(key:any) => any):any {
+export function arrayToObject<T, K extends string|number|symbol>(arr:Array<any>, keyFn:(key:any) => any, valFn:(key:any) => any):any {
     return arr.reduce((res, entry) => ({ ...res, [keyFn(entry)]: valFn(entry) }), {});
 }
 
@@ -154,21 +164,21 @@ export function appendIfNotExists(arr:Array<any>, entries:Array<any>):Array<any>
 /**
  * State normalization
  */
-export interface NormalizedState<Key extends string|number|symbol, State> {
+export interface NormalizedState<State, Key extends string|number|symbol> {
     byId: Record<Key, State>
     allIds: Array<Key>
 }
 
 export type NormalizedStateReducers<Payload, State, Key extends string|number|symbol> = {
     effectReducers: {
-        retrieveAll: CaseReducer<NormalizedState<Key, State>, PayloadAction<Array<Payload>>>,
-        retrieveMany: CaseReducer<NormalizedState<Key, State>, PayloadAction<Array<Payload>>>
-        retrieveOne: CaseReducer<NormalizedState<Key, State>, PayloadAction<Payload>>
+        retrieveAll: CaseReducer<NormalizedState<State, Key>, PayloadAction<Array<Payload>>>,
+        retrieveMany: CaseReducer<NormalizedState<State, Key>, PayloadAction<Array<Payload>>>
+        retrieveOne: CaseReducer<NormalizedState<State, Key>, PayloadAction<Payload>>
     },
     reducers: {
-        removeAll:  CaseReducer<NormalizedState<Key, State>>,
-        removeMany:  CaseReducer<NormalizedState<Key, State>, PayloadAction<Array<Key>>>
-        removeOne:  CaseReducer<NormalizedState<Key, State>, PayloadAction<Key>>
+        removeAll:  CaseReducer<NormalizedState<State, Key>>,
+        removeMany:  CaseReducer<NormalizedState<State, Key>, PayloadAction<Array<Key>>>
+        removeOne:  CaseReducer<NormalizedState<State, Key>, PayloadAction<Key>>
     }
 }
 
@@ -197,23 +207,24 @@ export function createNormalizedStateReducers<Payload, State, Key extends string
                 state.allIds = action.payload.map(payload => payloadToKey(payload) as any);
             },
             retrieveMany: function(state, action) {
-                state.byId = assignObject(state.byId, action.payload, payload => payloadToKey(payload), payload => payloadToState(payload));
+                state.byId = assignObjectByArray(state.byId, action.payload, payload => payloadToKey(payload), payload => payloadToState(payload));
                 state.allIds = appendIfNotExists(state.allIds, action.payload.map(payload => payloadToKey(payload)));
             },
             retrieveOne: function(state, action) {
-                state.byId = assignObject(state.byId, [action.payload], payload => payloadToKey(payload), payload => payloadToState(payload));
+                state.byId = assignObjectByArray(state.byId, [action.payload], payload => payloadToKey(payload), payload => payloadToState(payload));
                 state.allIds = appendIfNotExists(state.allIds, [payloadToKey(action.payload)]);
             }
         }
     }
 }
 
-export function createInitalNormalizedState<Key extends string|number|symbol, State>():NormalizedState<Key, State> {
+export function createInitalNormalizedState<State, Key extends string|number|symbol>():NormalizedState<State, Key> {
     return {
         byId: {} as Record<Key, State>,
         allIds: [] 
     };
 }
+
 
 // TODO: Connect query to commands
 // export function createCommand(query, ) {
@@ -228,23 +239,15 @@ interface Test {
     test: string
 }
 
-const test: Test = {
-    id: '0',
-    test: ''
-}
-
-const reducers = createNormalizedStateReducers<Test, QueryState<Test>, string>(payload => payload, payload => payload.id);
+const initalState = createInitalNormalizedState<Test, string>();
+const { reducers, effectReducers } = createNormalizedStateReducers<Test, Test, string>(payload => payload, payload => payload.id);
 
 const query = createQuery({
     name: 'hallo',
-    initialState: test,
+    initialState: initalState,
     request: () => new Promise((resolve) => {
         resolve("Hello World");
     }),
-    reducers: reducers.reducers,
-    effectReducers: {
-        test: function(state:QueryState<Test>, payload:PayloadAction<string>) {
-            state.test = payload.payload;
-        }
-    }
+    reducers,
+    effectReducers
 });
