@@ -11,24 +11,24 @@ import { ThunkAction } from 'redux-thunk'
 
 export interface QueryOptions<
   State,
-  CR extends SliceCaseReducers<State> = SliceCaseReducers<State>,
-  CR1 extends SliceCaseReducers<State> = SliceCaseReducers<State>
+  CR extends SliceCaseReducers<QueryState<State>> = SliceCaseReducers<QueryState<State>>,
+  CR1 extends SliceCaseReducers<QueryState<State>> = SliceCaseReducers<QueryState<State>>
 > {
     name: string, 
     initialState: State, 
     request: (action: string, payload:any) => Promise<any>,
-    reducers?: ValidateSliceCaseReducers<State, CR>,
-    effectReducers?: ValidateSliceCaseReducers<State, CR1>
+    reducers?: ValidateSliceCaseReducers<QueryState<State>, CR>,
+    effectReducers?: ValidateSliceCaseReducers<QueryState<State>, CR1>
 }
 
 export interface QuerySlice<
   State = any,
-  CaseReducers extends SliceCaseReducersWithLoading<State> = SliceCaseReducersWithLoading<State>,
-  CaseReducersForThunks = any,
+  CaseReducers extends SliceCaseReducersWithLoading<QueryState<State>> = SliceCaseReducersWithLoading<QueryState<State>>,
+  EffectCaseReducers extends SliceCaseReducers<QueryState<State>> = SliceCaseReducers<QueryState<State>>,
   ResultState = any
-> extends Slice<State, CaseReducers>{
+> extends Slice<QueryState<State>, CaseReducers>{
     effects: {
-        [Type in keyof CaseReducersForThunks]: ThunkAction<void, ResultState, null, Action<string>>
+        [Type in keyof EffectCaseReducers]: ThunkAction<void, ResultState, null, Action<string>>
     }
 }
 
@@ -52,15 +52,15 @@ export type ReducersWithLoading<Reducers, State> = Reducers & LoadingReducers<St
 export function createQuery<
     State, 
     CaseReducers extends SliceCaseReducers<QueryState<State>>,
-    CaseReducers1 extends SliceCaseReducers<QueryState<State>>, 
+    EffectCaseReducers extends SliceCaseReducers<QueryState<State>>, 
     ResultState = any>(
-        options: QueryOptions<State, CaseReducers, CaseReducers1>
-    ): QuerySlice<QueryState<State>, ReducersWithLoading<CaseReducers & CaseReducers1, QueryState<State>>, CaseReducers1, ResultState> {
+        options: QueryOptions<State, CaseReducers, EffectCaseReducers>
+    ): QuerySlice<QueryState<State>, ReducersWithLoading<CaseReducers & EffectCaseReducers, QueryState<State>>, EffectCaseReducers, ResultState> {
 
     const { name, initialState, request, reducers, effectReducers } = options;
 
     // monkeypatch reducers
-    const enhanceReducers = (reducers:SliceCaseReducers<State>):SliceCaseReducers<QueryState<State>> => 
+    const enhanceReducers = (reducers:SliceCaseReducers<QueryState<State>>):SliceCaseReducers<QueryState<State>> => 
         Object.keys(reducers).reduce((result:any, reducerName) => {
             result[reducerName] = (state: QueryState<State>, payload: PayloadAction<any>) => 
             {
@@ -76,11 +76,12 @@ export function createQuery<
         error: null
     };
 
+    const enhancedReducers = effectReducers && enhanceReducers(effectReducers) || {};
     const slice = createSlice<QueryState<State>, SliceCaseReducersWithLoading<QueryState<State>>>({
         name,
         initialState: initalStateWithLoading,
         reducers: {
-          ...enhanceReducers(effectReducers),
+            ...enhancedReducers,
           startLoading: (state: InternalQueryState) => {
             state.isLoading = true;
             state.error = null;
@@ -111,12 +112,14 @@ export function createQuery<
     };
 
     const effects: Record<string, Function> = {};
-    Object.keys(effectReducers).forEach(reducerName => {
-        const effect = createEffect(reducerName);
-        // enhance thunks
-        (effect as any).toString = () => reducerName;
-        effects[reducerName] = effect;
-    });
+    if (effectReducers) {
+        Object.keys(effectReducers).forEach(reducerName => {
+            const effect = createEffect(reducerName);
+            // enhance thunks
+            (effect as any).toString = () => reducerName;
+            effects[reducerName] = effect;
+        });
+    }
 
     return { 
         name: slice.name, 
@@ -206,9 +209,9 @@ export function createNormalizedStateReducers<Payload, State, Key extends string
 }
 
 // TODO: Connect query to commands
-export function createCommand(query, ) {
+// export function createCommand(query, ) {
 
-}
+// }
 
 interface Test {
     test: string
