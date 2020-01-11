@@ -124,8 +124,8 @@ export function createQuery<
     return { 
         name: slice.name, 
         reducer: slice.reducer, 
-        actions: slice.actions as any, 
         caseReducers: slice.caseReducers as any, 
+        actions: slice.actions as any, 
         effects: effects as any 
     };
 };
@@ -173,8 +173,8 @@ export type NormalizedStateReducers<Payload, State, Key extends string|number|sy
 }
 
 export function createNormalizedStateReducers<Payload, State, Key extends string|number|symbol>(
-        payloadToState:(payload:Payload|Array<Payload>) => State, 
-        payloadToKey:(payload:Payload|Array<Payload>) => Key
+        payloadToState:(payload:Payload) => State, 
+        payloadToKey:(payload:Payload) => Key
     ): NormalizedStateReducers<Payload, State, Key> {
     return {
         reducers: {
@@ -208,18 +208,32 @@ export function createNormalizedStateReducers<Payload, State, Key extends string
     }
 }
 
+export function createInitalNormalizedState<Key extends string|number|symbol, State>():NormalizedState<Key, State> {
+    return {
+        byId: {} as Record<Key, State>,
+        allIds: [] 
+    };
+}
+
 // TODO: Connect query to commands
 // export function createCommand(query, ) {
 
 // }
 
+
+// Test of type safety
+
 interface Test {
+    id: string;
     test: string
 }
 
 const test: Test = {
+    id: '0',
     test: ''
 }
+
+const reducers = createNormalizedStateReducers<Test, QueryState<Test>, string>(payload => payload, payload => payload.id);
 
 const query = createQuery({
     name: 'hallo',
@@ -227,6 +241,7 @@ const query = createQuery({
     request: () => new Promise((resolve) => {
         resolve("Hello World");
     }),
+    reducers: reducers.reducers,
     effectReducers: {
         test: function(state:QueryState<Test>, payload:PayloadAction<string>) {
             state.test = payload.payload;
