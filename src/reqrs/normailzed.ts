@@ -2,7 +2,7 @@ import {
     PayloadAction,
     CaseReducer, 
  } from '@reduxjs/toolkit'
-import { filterObject, arrayToObject, assignObjectByArray, appendIfNotExists } from './helpers';
+import { filterObject, arrayToObject, extendObjectByArray, appendIfNotExists } from './helpers';
 
 /**
  * State normalization
@@ -50,11 +50,11 @@ export function createNormalizedStateReducers<Payload, State, Key extends string
                 state.allIds = action.payload.map(payload => payloadToKey(payload) as any);
             },
             retrieveMany: function(state, action) {
-                state.byId = assignObjectByArray(state.byId, action.payload, payload => payloadToKey(payload), payload => payloadToState(payload));
+                state.byId = extendObjectByArray(state.byId, action.payload, payload => payloadToKey(payload), payload => payloadToState(payload));
                 state.allIds = appendIfNotExists(state.allIds, action.payload.map(payload => payloadToKey(payload)) as any);
             },
             retrieveOne: function(state, action) {
-                state.byId = assignObjectByArray(state.byId, [action.payload], payload => payloadToKey(payload), payload => payloadToState(payload));
+                state.byId = extendObjectByArray(state.byId, [action.payload], payload => payloadToKey(payload), payload => payloadToState(payload));
                 state.allIds = appendIfNotExists(state.allIds, [payloadToKey(action.payload) as any]);
             }
         }

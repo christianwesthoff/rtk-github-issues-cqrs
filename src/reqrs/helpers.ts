@@ -12,7 +12,7 @@ export function filterObject<T, K extends string|number|symbol>(obj:T, keyFn:(ke
         .reduce((res, [key, value]) => ({ ...res, [key]: value }), {}) as T;
 }
 
-export function assignObjectByArray<T, K extends string|number|symbol>(obj:T, arr:Array<any>, keyFn:(key:any) => K, valFn:(key:any) => any):T {
+export function extendObjectByArray<T, K extends string|number|symbol>(obj:T, arr:Array<any>, keyFn:(key:any) => K, valFn:(key:any) => any):T {
     return arr.reduce((res, entry) => ({ ...res, [keyFn(entry)]: valFn(entry) }), obj);
 }
 

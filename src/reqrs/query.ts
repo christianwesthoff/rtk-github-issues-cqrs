@@ -23,6 +23,14 @@ export interface QueryOptions<
     effectReducers?: ValidateSliceCaseReducers<State, EffectCaseReducers>
 }
 
+interface LoadingReducers<State> {
+    loadingStart: CaseReducer<State>,
+    loadingFailed: CaseReducer<State, PayloadAction<any>>,
+    loadingReset: CaseReducer<State>
+}
+
+export type SliceCaseReducersWithLoading<State> = SliceCaseReducers<State> & LoadingReducers<State>;
+
 export interface QuerySlice<
   State = any,
   CaseReducers extends SliceCaseReducersWithLoading<State> = SliceCaseReducersWithLoading<State>,
@@ -33,14 +41,6 @@ export interface QuerySlice<
         [Type in keyof EffectCaseReducers]: ThunkAction<void, ResultState, null, Action<string>>
     }
 }
-
-interface LoadingReducers<State> {
-    loadingStart: CaseReducer<State>,
-    loadingFailed: CaseReducer<State, PayloadAction<any>>,
-    loadingReset: CaseReducer<State>
-}
-
-export type SliceCaseReducersWithLoading<State> = SliceCaseReducers<State> & LoadingReducers<State>;
 
 interface InternalQueryState {
     isLoading: boolean;
@@ -125,8 +125,7 @@ export function createQuery<
     if (effectReducers) {
         Object.keys(effectReducers).forEach(reducerName => {
             const effect = createEffect(reducerName);
-            // enhance thunks
-            enhanceFunction(effect, reducerName);
+//            enhanceFunction(effect, reducerName);
             effects[reducerName] = effect;
         });
     }
