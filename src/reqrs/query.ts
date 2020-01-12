@@ -10,6 +10,9 @@ import {
  } from '@reduxjs/toolkit'
 import { ThunkAction } from 'redux-thunk'
 import { enhanceFunction } from "./helpers";
+import { RequestException } from './exception';
+
+export type Request = (payload:any, action?: string) => Promise<any>;
 
 export interface QueryOptions<
   State,
@@ -18,18 +21,18 @@ export interface QueryOptions<
 > {
     name: string, 
     initialState: State, 
-    request: (action: string, payload:any) => Promise<any>,
+    request: Request,
     reducers?: ValidateSliceCaseReducers<State, CaseReducers>,
     effectReducers?: ValidateSliceCaseReducers<State, EffectCaseReducers>
 }
 
-interface LoadingReducers<State> {
+export interface QueryReducers<State> {
     loadingStart: CaseReducer<State>,
     loadingFailed: CaseReducer<State, PayloadAction<any>>,
     loadingReset: CaseReducer<State>
 }
 
-export type SliceCaseReducersWithLoading<State> = SliceCaseReducers<State> & LoadingReducers<State>;
+export type SliceCaseReducersWithLoading<State> = SliceCaseReducers<State> & QueryReducers<State>;
 
 export interface QuerySlice<
   State = any,
@@ -37,19 +40,19 @@ export interface QuerySlice<
   EffectCaseReducers extends SliceCaseReducers<State> = SliceCaseReducers<State>,
   ResultState = any
 > extends Slice<State, CaseReducers>{
-    effects: {
+    effects?: {
         [Type in keyof EffectCaseReducers]: ThunkAction<void, ResultState, null, Action<string>>
     }
 }
 
 interface InternalQueryState {
     isLoading: boolean;
-    error: string|null;
+    errors: Array<string>|null;
 }
 
 export type QueryState<State> = State & InternalQueryState;
 
-export type ReducersWithLoading<Reducers, State> = Reducers & LoadingReducers<State>;
+export type ReducersWithLoading<Reducers, State> = Reducers & QueryReducers<State>;
 
 export type RemapReducers<Reducers, State> = {
     [Type in keyof Reducers]: 
@@ -76,14 +79,14 @@ export function createQuery<
             {
                 (reducers as any)[reducerName](state, payload);
                 state.isLoading = false;
-                state.error = null;
+                state.errors = null;
             }
         }), {});
 
     const initalStateWithLoading: QueryState<State> = {
         ...initialState,
         isLoading: false,
-        error: null
+        errors: null
     };
 
     const enhancedReducers = effectReducers && enhanceReducers(effectReducers) || {};
@@ -94,15 +97,15 @@ export function createQuery<
             ...enhancedReducers,
           loadingStart: (state: InternalQueryState) => {
             state.isLoading = true;
-            state.error = null;
+            state.errors = null;
           },
-          loadingFailed: (state: InternalQueryState, action: PayloadAction<string>) => {
+          loadingFailed: (state: InternalQueryState, action: PayloadAction<Array<string>>) => {
             state.isLoading = false;
-            state.error = action.payload;
+            state.errors = action.payload;
           },
           loadingReset: (state: InternalQueryState) => {
             state.isLoading = false;
-            state.error = null;
+            state.errors = null;
           },
           ...reducers
         }
@@ -114,10 +117,11 @@ export function createQuery<
     ): ThunkAction<void, ResultState, null, Action<string>> => async dispatch => {
         try {
             dispatch(slice.actions.loadingStart());
-            const response = await request(actionName, payload);
+            const response: any = await request(payload, actionName);
             dispatch(slice.actions[actionName]({ ...payload, ...response }));
         } catch (err) {
-            dispatch(slice.actions.loadingFailed(err));
+            dispatch(slice.actions.loadingFailed((err as RequestException).errors));
+            throw err;
         }
     };
 
@@ -138,10 +142,3 @@ export function createQuery<
         effects: effects as any 
     };
 };
-
-
-// TODO: Connect query to commands
-// export function createCommand(query, ) {
-
-// }
-
