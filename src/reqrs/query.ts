@@ -10,9 +10,7 @@ import {
  } from '@reduxjs/toolkit'
 import { ThunkAction } from 'redux-thunk'
 import { enhanceFunction } from "./helpers";
-import { RequestException } from './exception';
-
-export type Request = (payload:any, action?: string) => Promise<any>;
+import { RequestException, Request } from './request';
 
 export interface QueryOptions<
   State,

@@ -1,5 +1,5 @@
 import { 
-    Action, ValidateSliceCaseReducers, CaseReducers, SliceCaseReducers, Slice, CaseReducer, PayloadAction, createSlice
+    Action, SliceCaseReducers, Slice, CaseReducer, PayloadAction, createSlice
  } from '@reduxjs/toolkit'
 import { ThunkAction } from 'redux-thunk'
 import { RequestException, Request } from './request';
@@ -65,7 +65,6 @@ export function createCommand<ResultState = any>(options:CommandOptions):Command
         }
     });
 
-    
     return {
         name: slice.name, 
         reducer: slice.reducer, 
@@ -79,7 +78,7 @@ export function createCommand<ResultState = any>(options:CommandOptions):Command
                     dispatch(slice.actions.loadingStart());
                     const response: any = await request(payload);
                     dispatch(slice.actions.loadingSuccess());
-                    dispatch(connectQueryEffect(response));
+                    dispatch(connectQueryEffect({ ...payload, ...response }));
                 } catch (err) {
                     dispatch(slice.actions.loadingFailed((err as RequestException).errors));
                     throw err;
