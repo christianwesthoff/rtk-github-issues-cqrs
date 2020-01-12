@@ -11,7 +11,7 @@ export interface CommandOptions {
     connectQueryEffect: (payload:any) => ThunkAction<void, any, null, Action<string>>,
 }
 
-export interface CommandSlice<ResultState = any> extends Slice<CommandState, CommandReducers<CommandState>>{
+export interface CommandSlice<ResultState = any> extends Slice<CommandState, CommandReducers>{
     effects: {
         create: ThunkAction<void, ResultState, null, Action<string>>
     }
