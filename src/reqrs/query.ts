@@ -38,8 +38,8 @@ export interface QuerySlice<
   EffectCaseReducers extends SliceCaseReducers<State> = SliceCaseReducers<State>,
   ResultState = any
 > extends Slice<State, CaseReducers>{
-    effects?: {
-        [Type in keyof EffectCaseReducers]: ThunkAction<void, ResultState, null, Action<string>>
+    effects: {
+        [Type in keyof EffectCaseReducers]: (payload: any) => ThunkAction<void, ResultState, null, Action<string>>
     }
 }
 

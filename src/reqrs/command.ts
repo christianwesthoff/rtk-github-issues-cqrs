@@ -1,19 +1,21 @@
 import { 
-    Action, SliceCaseReducers, Slice, CaseReducer, PayloadAction, createSlice
+    Action, SliceCaseReducers, Slice, CaseReducer, PayloadAction, createSlice, Dispatch
  } from '@reduxjs/toolkit'
-import { ThunkAction } from 'redux-thunk'
+import { ThunkAction, ThunkDispatch } from 'redux-thunk'
 import { RequestException, Request } from './request';
 // TODO: Connect query to commands
+
+export type Dispatcher = <Payload, State>(dispatch: ThunkDispatch<State, null, any>, payload:Payload) => void;
 
 export interface CommandOptions {
     name: string, 
     request: Request,
-    connectQueryEffect: (payload:any) => ThunkAction<void, any, null, Action<string>>,
+    connect: Dispatcher
 }
 
-export interface CommandSlice<ResultState = any> extends Slice<CommandState, CommandReducers>{
+export interface CommandSlice extends Slice<CommandState, CommandReducers>{
     effects: {
-        create: ThunkAction<void, ResultState, null, Action<string>>
+        create: Dispatcher
     }
 }
 
@@ -30,8 +32,8 @@ export interface CommandReducers extends SliceCaseReducers<CommandState> {
     loadingReset: CaseReducer<CommandState>
 }
 
-export function createCommand<ResultState = any>(options:CommandOptions):CommandSlice<ResultState> {
-    const { name, request, connectQueryEffect } = options;
+export function createCommand<ResultState = any>(options:CommandOptions):CommandSlice {
+    const { name, request, connect } = options;
     
     const initalState: CommandState = {
         isSuccess: false,
@@ -78,7 +80,7 @@ export function createCommand<ResultState = any>(options:CommandOptions):Command
                     dispatch(slice.actions.loadingStart());
                     const response: any = await request(payload);
                     dispatch(slice.actions.loadingSuccess());
-                    dispatch(connectQueryEffect({ ...payload, ...response }));
+                    connect(dispatch, { ...payload, ...response });
                 } catch (err) {
                     dispatch(slice.actions.loadingFailed((err as RequestException).errors));
                     throw err;

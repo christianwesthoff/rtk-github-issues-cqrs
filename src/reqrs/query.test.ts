@@ -1,5 +1,6 @@
 import { createQuery } from "./query";
 import { createInitalNormalizedState, createNormalizedStateReducers } from "./normalized";
+import { createCommand } from "./command";
 // Test of type safety
 
 export interface Test {
@@ -22,3 +23,11 @@ const query = createQuery({
     reducers,
     effectReducers
 });
+
+const command = createCommand({
+    name: 'update_hallo',
+    request: () => new Promise<Test>((resolve, reject) => resolve(result)),
+    connect: (dispatch, payload) => {
+        dispatch(query.effects.retrieveOne(payload));
+    }
+})

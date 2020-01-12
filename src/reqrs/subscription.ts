@@ -1,6 +1,7 @@
 import { Middleware, MiddlewareAPI, Dispatch, PayloadAction } from "@reduxjs/toolkit";
+import { ThunkDispatch } from "redux-thunk"
 
-export type Dispatcher = <Payload>(dispatch: Dispatch, payload:Payload) => void;
+export type Dispatcher = <Payload, State>(dispatch: ThunkDispatch<State, null, any>, payload:Payload) => void;
 export type SubscriptionFilter = <Payload>(payload:Payload) => boolean;
 
 export interface Subscription {
