@@ -11,7 +11,7 @@ export interface CommandOptions {
     connectQueryEffect: (payload:any) => ThunkAction<void, any, null, Action<string>>,
 }
 
-export interface CommandSlice<ResultState = any> extends Slice<CommandState, CommandReducers>{
+export interface CommandSlice<ResultState = any> extends Slice<CommandState, CommandReducers<CommandState>>{
     effects: {
         create: ThunkAction<void, ResultState, null, Action<string>>
     }
@@ -25,7 +25,7 @@ export interface CommandState {
 
 export interface CommandReducers extends SliceCaseReducers<CommandState> {
     loadingStart: CaseReducer<CommandState>,
-    loadingSuccess: CaseReducer<CommandState>,
+    loadingSuccess: CaseReducer<CommandState, PayloadAction<any>>,
     loadingFailed: CaseReducer<CommandState, PayloadAction<any>>,
     loadingReset: CaseReducer<CommandState>
 }
