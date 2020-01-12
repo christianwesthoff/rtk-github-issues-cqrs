@@ -4,7 +4,7 @@ import { createInitalNormalizedState, createNormalizedStateReducers } from "./no
 
 export interface Test {
     id: string;
-    test: string
+    message: string
 }
 
 const initalState = createInitalNormalizedState<Test, string>();
@@ -14,7 +14,7 @@ const query = createQuery({
     name: 'hallo',
     initialState: initalState,
     request: () => new Promise((resolve) => {
-        resolve("Hello World");
+        resolve({ message: "Hello World", id: 1 });
     }),
     reducers,
     effectReducers
