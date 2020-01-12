@@ -4,7 +4,7 @@ export type Dispatcher = <Payload>(dispatch: Dispatch, payload:Payload) => void;
 export type SubscriptionFilter = <Payload>(payload:Payload) => boolean;
 
 export interface Subscription {
-    actionName: string,
+    action: string,
     stage: 'before'|'after',
     dispatcher: Dispatcher,
     filter?: SubscriptionFilter
@@ -42,6 +42,6 @@ export const subscriptionMiddleware: Middleware =
   };
 
 export const useSubscription = (options: Subscription):void => {
-    const { actionName, stage } = options;
-    subscriptionRegistry[actionName][stage] = ((subscriptionRegistry as any)[stage][actionName] || []).concat([options]);
+    const { action, stage } = options;
+    subscriptionRegistry[action][stage] = ((subscriptionRegistry as any)[stage][action] || []).concat([options]);
 }
