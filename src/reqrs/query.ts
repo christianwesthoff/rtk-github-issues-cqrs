@@ -114,8 +114,8 @@ export function createQuery<
     ): ThunkAction<void, ResultState, null, Action<string>> => async dispatch => {
         try {
             dispatch(slice.actions.loadingStart());
-            const result = await request(actionName, payload);
-            dispatch(slice.actions[actionName](result));
+            const response = await request(actionName, payload);
+            dispatch(slice.actions[actionName]({ ...payload, ...response }));
         } catch (err) {
             dispatch(slice.actions.loadingFailed(err));
         }

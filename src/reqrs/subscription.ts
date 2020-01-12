@@ -41,7 +41,7 @@ export const subscriptionMiddleware: Middleware =
     return dispatch;
   };
 
-export const useSubscription = (options: Subscription):void => {
+export const createSubscription = (options: Subscription):void => {
     const { action, stage } = options;
     subscriptionRegistry[action][stage] = ((subscriptionRegistry as any)[stage][action] || []).concat([options]);
 }
