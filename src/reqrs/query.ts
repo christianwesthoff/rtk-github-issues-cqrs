@@ -9,6 +9,7 @@ import {
     ValidateSliceCaseReducers
  } from '@reduxjs/toolkit'
 import { ThunkAction } from 'redux-thunk'
+import { enhanceFunction } from "./helpers";
 
 export interface QueryOptions<
   State,
@@ -125,7 +126,7 @@ export function createQuery<
         Object.keys(effectReducers).forEach(reducerName => {
             const effect = createEffect(reducerName);
             // enhance thunks
-            (effect as any).toString = () => reducerName;
+            enhanceFunction(effect, reducerName);
             effects[reducerName] = effect;
         });
     }
