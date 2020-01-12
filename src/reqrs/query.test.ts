@@ -1,7 +1,6 @@
 import { createQuery } from "./query";
 import { createInitalNormalizedState, createNormalizedStateReducers } from "./normalized";
 import { createCommand } from "./command";
-// Test of type safety
 
 export interface Test {
     id: string;
