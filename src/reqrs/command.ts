@@ -3,8 +3,9 @@ import {
  } from '@reduxjs/toolkit'
 import { ThunkAction, ThunkDispatch } from 'redux-thunk'
 import { RequestException, Request } from './request';
-// TODO: Connect query to commands
 
+// TODO: make command expandable
+// TODO: remove isSuccess
 export type Dispatcher = <Payload, State>(dispatch: ThunkDispatch<State, null, any>, payload:Payload) => void;
 
 export interface CommandOptions {
