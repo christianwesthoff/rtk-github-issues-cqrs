@@ -5,7 +5,7 @@ export interface RequestException {
     toString: () => string
 }
 
-export type Request = (payload:any, action?: string) => Promise<any>;
+export type Request<R = any, P = any> = (payload:P, actionName?: string) => Promise<R>;
 
 export const createRequestException = (message:string, errors: Array<string>):RequestException => {
     return {

@@ -11,6 +11,8 @@ export interface Test {
 const initalState = createInitalNormalizedState<Test, string>();
 const { reducers, effectReducers } = createNormalizedStateReducers<Test, Test, string>(payload => payload, payload => payload.id);
 
+
+
 const result: Test = {
     id: "1",
     message: "Hallo"

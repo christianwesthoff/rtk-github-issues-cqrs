@@ -15,7 +15,7 @@ import { RequestException, Request } from './request';
 export interface QueryOptions<
   State,
   CaseReducers extends SliceCaseReducers<State> = SliceCaseReducers<State>,
-  EffectCaseReducers extends SliceCaseReducers<State> = SliceCaseReducers<State>
+  EffectCaseReducers extends SliceCaseReducers<State> = SliceCaseReducers<State>,
 > {
     name: string, 
     initialState: State, 
