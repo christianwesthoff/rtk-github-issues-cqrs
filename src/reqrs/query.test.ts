@@ -1,6 +1,7 @@
 import { createQuery } from "./query";
 import { createInitalNormalizedState, createNormalizedStateReducers } from "./normalized";
 import { createCommand } from "./command";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export interface Test {
     id: string;
@@ -32,3 +33,16 @@ const command = createCommand({
         dispatch(query.effects.retrieveOne(payload));
     }
 })
+
+const counter = createQuery({
+    name: 'counter',
+    initialState: 0 as number,
+    effectReducers: {
+        fetchOne: {
+            request: (payload: number) => new Promise<number>((resolve) => resolve(payload)),
+            reducer: (state:number, { payload }:PayloadAction<number>) => state * payload
+        }
+    },
+  })
+
+counter.effects.fetchOne

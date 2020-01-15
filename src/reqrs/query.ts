@@ -6,22 +6,43 @@ import {
     CaseReducerWithPrepare,
     Action, 
     Slice, 
-    ValidateSliceCaseReducers
+    ValidateSliceCaseReducers,
+    PrepareAction
  } from '@reduxjs/toolkit'
 import { ThunkAction } from 'redux-thunk'
-import { enhanceFunction } from "./helpers";
-import { RequestException, Request } from './request';
+import { RequestException } from './request';
+
+export declare type Request<R = any, P = any> = (payload:P) => Promise<R>
+
+export declare type CaseReducerWithRequest<State, Action extends PayloadAction> = {
+    request: Request,
+    reducer: CaseReducer<State, Action>;
+};
+
+export declare type SliceCaseEffectReducers<State> = {
+    [K: string]: CaseReducerWithRequest<State, PayloadAction<any>>;
+};
+
+export declare type ValidateSliceEffectCaseReducers<S, ACR extends SliceCaseEffectReducers<S>> = ACR & {
+    [P in keyof ACR]: ACR[P] extends {
+        request(payload: any): Promise<infer O>;
+    } ? {
+        reducer(s: S, action?: {
+            payload: O;
+        }): any;
+    } : unknown;
+};
 
 export interface QueryOptions<
   State,
   CaseReducers extends SliceCaseReducers<State> = SliceCaseReducers<State>,
-  EffectCaseReducers extends SliceCaseReducers<State> = SliceCaseReducers<State>,
+  EffectCaseReducers extends SliceCaseEffectReducers<State> = SliceCaseEffectReducers<State>,
 > {
     name: string, 
     initialState: State, 
-    request: Request,
+    request?: Request,
     reducers?: ValidateSliceCaseReducers<State, CaseReducers>,
-    effectReducers?: ValidateSliceCaseReducers<State, EffectCaseReducers>
+    effectReducers?: ValidateSliceEffectCaseReducers<State, EffectCaseReducers>
 }
 
 export interface QueryReducers<State> {
@@ -61,7 +82,7 @@ export type RemapReducers<Reducers, State> = {
 export function createQuery<
     State, 
     CaseReducers extends SliceCaseReducers<State>,
-    EffectCaseReducers extends SliceCaseReducers<State>, 
+    EffectCaseReducers extends SliceCaseEffectReducers<State>, 
     ResultState = any>(
         options: QueryOptions<State, CaseReducers, EffectCaseReducers>
     ): QuerySlice<QueryState<State>, 
@@ -87,7 +108,7 @@ export function createQuery<
         errors: null
     };
 
-    const enhancedReducers = effectReducers && enhanceReducers(effectReducers) || {};
+    const enhancedReducers = effectReducers && enhanceReducers(effectReducers as any) || {};
     const slice = createSlice<QueryState<State>, SliceCaseReducersWithLoading<QueryState<State>>>({
         name,
         initialState: initalStateWithLoading,
@@ -115,7 +136,7 @@ export function createQuery<
     ): ThunkAction<void, ResultState, null, Action<string>> => async dispatch => {
         try {
             dispatch(slice.actions.loadingStart());
-            const response: any = await request(payload, actionName);
+            const response: any = {};
             dispatch(slice.actions[actionName]({ ...payload, ...response }));
         } catch (err) {
             dispatch(slice.actions.loadingFailed((err as RequestException).errors));
@@ -127,7 +148,6 @@ export function createQuery<
     if (effectReducers) {
         Object.keys(effectReducers).forEach(reducerName => {
             const effect = createEffect(reducerName);
-//            enhanceFunction(effect, reducerName);
             effects[reducerName] = effect;
         });
     }
