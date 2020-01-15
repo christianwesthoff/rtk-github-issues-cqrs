@@ -13,26 +13,26 @@ const { reducers, effectReducers } = createNormalizedStateReducers<Test, Test, s
 
 
 
-const result: Test = {
-    id: "1",
-    message: "Hallo"
-}
+// const result: Test = {
+//     id: "1",
+//     message: "Hallo"
+// }
 
-const query = createQuery({
-    name: 'hallo',
-    initialState: initalState,
-    request: () => new Promise<Test>((resolve, reject) => resolve(result)),
-    reducers,
-    effectReducers
-});
+// const query = createQuery({
+//     name: 'hallo',
+//     initialState: initalState,
+//     request: () => new Promise<Test>((resolve, reject) => resolve(result)),
+//     reducers,
+//     effectReducers
+// });
 
-const command = createCommand({
-    name: 'update_hallo',
-    request: () => new Promise<Test>((resolve, reject) => resolve(result)),
-    connect: (dispatch, payload) => {
-        dispatch(query.effects.retrieveOne(payload));
-    }
-})
+// const command = createCommand({
+//     name: 'update_hallo',
+//     request: () => new Promise<Test>((resolve, reject) => resolve(result)),
+//     connect: (dispatch, payload) => {
+//         dispatch(query.effects.retrieveOne(payload));
+//     }
+// })
 
 const counter = createQuery({
     name: 'counter',
@@ -43,6 +43,6 @@ const counter = createQuery({
             reducer: (state:number, { payload }:PayloadAction<number>) => state * payload
         }
     },
-  })
+})
 
 counter.effects.fetchOne
