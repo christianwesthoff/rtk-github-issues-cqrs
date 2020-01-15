@@ -156,7 +156,6 @@ export function createQuery<
         }
     });
 
-    // TODO: type payload
     const createEffect = (name:string, request:Request) => (
         payload: any,
     ): ThunkAction<void, ResultState, null, Action<string>> => async dispatch => {
