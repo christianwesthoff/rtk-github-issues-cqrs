@@ -9,8 +9,6 @@ import {
     ValidateSliceCaseReducers
  } from '@reduxjs/toolkit'
 import { ThunkAction } from 'redux-thunk'
-import { RequestException } from './request';
-
 export declare type Request<R = any, P = any> = (payload:P) => Promise<R>
 
 export declare type CaseReducerWithRequest<State, Action extends PayloadAction> = {
@@ -83,8 +81,7 @@ export type QueryState<State> = State & InternalQueryState;
 export type ReducersWithLoading<Reducers, State> = Reducers & QueryReducers<State>;
 
 export type RemapCaseReducers<S, T extends SliceCaseReducers<S>, RS> = {
-    [P in keyof T]: T[P] extends 
-        CaseReducer<S, PayloadAction<infer P>> ? CaseReducer<RS, PayloadAction<P>> : 
+    [P in keyof T]: T[P] extends CaseReducer<S, PayloadAction<infer P>> ? CaseReducer<RS, PayloadAction<P>> : 
         CaseReducerWithPrepare<RS, PayloadAction<any>>
 }
 
@@ -161,13 +158,13 @@ export function createQuery<
 
     const createEffect = (name:string, request:Request) => (
         payload: any,
-    ): ThunkAction<void, ResultState, null, Action<string>> => async dispatch => {
+    ): ThunkAction<void, ResultState, null, Action<any>> => async dispatch => {
         try {
             dispatch(slice.actions.loadingStart());
             const response = await request(payload);
             dispatch(slice.actions[name](response));
         } catch (err) {
-            dispatch(slice.actions.loadingFailed((err as RequestException).errors));
+            dispatch(slice.actions.loadingFailed([err]));
             throw err;
         }
     };
