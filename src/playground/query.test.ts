@@ -1,7 +1,6 @@
 import { createQuery } from "./query";
 import { createInitalNormalizedState, createNormalizedStateReducers } from "./normalized";
-import { createCommand } from "./command";
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { PayloadAction } from "@reduxjs/toolkit";
 
 export interface Test {
     id: string;
@@ -38,16 +37,17 @@ export const calculator = createQuery({
     name: 'calculator',
     initialState: 0 as number,
     reducers: {
+        // creates reducer 'calculator/add'
         add: (state: number, { payload }:PayloadAction<number>) => state + payload
     },
     effectReducers: {
+        // creates reducer 'calculator/fetchOne'
         fetchOne: {
             request: (payload: number) => new Promise<{ add: number }>((resolve) => resolve({ add: payload })),
-            reducer: (state: number, { payload }:PayloadAction<{ add: number }>) => state * payload.add
+            reducer: (state: number, { payload }:PayloadAction<{ add: number }>) => state * payload.add,
         }
     },
 })
 
 calculator.effects.fetchOne(1)
 calculator.actions.fetchOne({ add: 1 })
-calculator.actions.add(1)

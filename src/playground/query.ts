@@ -9,6 +9,7 @@ import {
     ValidateSliceCaseReducers
  } from '@reduxjs/toolkit'
 import { ThunkAction } from 'redux-thunk'
+import { nameFunction } from './helpers';
 export declare type Request<R = any, P = any> = (payload:P) => Promise<R>
 
 export declare type CaseReducerWithRequest<State, Action extends PayloadAction> = {
@@ -171,9 +172,10 @@ export function createQuery<
 
     const effects: Record<string, Function> = {};
     if (effectReducers) {
-        Object.keys(effectReducers).forEach(name => {
-            const { request } = effectReducers[name];
-            const effect = createEffect(name, request);
+        Object.keys(effectReducers).forEach(effectName => {
+            const { request } = effectReducers[effectName];
+            const effect = createEffect(effectName, request);
+            nameFunction(effect, `${name}\\${effectName}`);
             effects[name] = effect;
         });
     }

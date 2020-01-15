@@ -1,4 +1,4 @@
-export function enhanceFunction<T extends Function>(fn:T, name:string):T {
+export function nameFunction<T extends Function>(fn:T, name:string):T {
     fn.toString = () => name;
     return fn;
 }
