@@ -42,6 +42,7 @@ export const calculator = createQuery({
     },
     effectReducers: {
         // creates reducer 'calculator/fetchOne'
+        // creates effect 'calculator/fetchOne'
         fetchOne: {
             request: (payload: number) => new Promise<{ add: number }>((resolve) => resolve({ add: payload })),
             reducer: (state: number, { payload }:PayloadAction<{ add: number }>) => state * payload.add,

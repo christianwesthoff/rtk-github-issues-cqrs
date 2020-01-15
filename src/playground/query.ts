@@ -9,7 +9,7 @@ import {
     ValidateSliceCaseReducers
  } from '@reduxjs/toolkit'
 import { ThunkAction } from 'redux-thunk'
-import { nameFunction } from './helpers';
+import { nameObject } from './helpers';
 export declare type Request<R = any, P = any> = (payload:P) => Promise<R>
 
 export declare type CaseReducerWithRequest<State, Action extends PayloadAction> = {
@@ -31,16 +31,16 @@ export declare type ValidateSliceEffectCaseReducers<S, ACR extends SliceCaseEffe
     } : unknown;
 };
 
-export type CaseReducerEffects<P, S> = {
-    [T in keyof P]: P[T] extends {
+export type CaseReducerEffects<T, S> = {
+    [P in keyof T]: T[P] extends {
         request(payload: infer O): any;
-    } ? EffectCreatorWithPayload<O, S> : unknown
+    } ? EffectCreatorWithPayload<S, O> : unknown
 }
 
-export interface EffectCreatorWithPayload<P, S> {
+export interface EffectCreatorWithPayload<S, P = never> {
     <PT extends P>(payload: PT): ThunkAction<void, S, null, Action<string>>;
-    (payload: P): ThunkAction<void, S, null, Action<string>>;
-    (): ThunkAction<void, S, null, Action<string>>;
+    (payload?: P): ThunkAction<void, S, null, Action<string>>;
+    // (): ThunkAction<void, S, null, Action<string>>;
 }
 
 export interface QueryOptions<
@@ -157,7 +157,7 @@ export function createQuery<
         }
     });
 
-    const createEffect = (name:string, request:Request) => (
+    const createEffect = (name:string, request:Request):EffectCreatorWithPayload<any, ResultState> => (
         payload: any,
     ): ThunkAction<void, ResultState, null, Action<any>> => async dispatch => {
         try {
@@ -170,12 +170,12 @@ export function createQuery<
         }
     };
 
-    const effects: Record<string, Function> = {};
+    const effects: Record<string, EffectCreatorWithPayload<any, ResultState>> = {};
     if (effectReducers) {
         Object.keys(effectReducers).forEach(effectName => {
             const { request } = effectReducers[effectName];
             const effect = createEffect(effectName, request);
-            nameFunction(effect, `${name}\\${effectName}`);
+            nameObject(effect, `${name}\\${effectName}`);
             effects[name] = effect;
         });
     }
