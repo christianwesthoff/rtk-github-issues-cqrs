@@ -34,20 +34,20 @@ const { reducers, effectReducers } = createNormalizedStateReducers<Test, Test, s
 //     }
 // })
 
-const counter = createQuery({
-    name: 'counter',
+const calculator = createQuery({
+    name: 'calculator',
     initialState: 0 as number,
     reducers: {
-        test: (state: number, { payload }:PayloadAction<number>) => state * payload
+        add: (state: number, { payload }:PayloadAction<number>) => state + payload
     },
     effectReducers: {
         fetchOne: {
-            request: (payload: number) => new Promise<number>((resolve) => resolve(payload)),
-            reducer: (state: number, { payload }:PayloadAction<number>) => state * payload
+            request: (payload: number) => new Promise<{ add: number }>((resolve) => resolve({ add: 1 })),
+            reducer: (state: number, { payload }:PayloadAction<{ add: number }>) => state * payload.add
         }
     },
 })
 
-counter.effects.fetchOne(1)
-counter.actions.fetchOne(1)
-counter.actions.test(1)
+calculator.effects.fetchOne(1)
+calculator.actions.fetchOne({ add: 1 })
+calculator.actions.add(1)

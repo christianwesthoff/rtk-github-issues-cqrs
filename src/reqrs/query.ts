@@ -95,6 +95,10 @@ export type RemapCaseEffectReducers<S, T extends SliceCaseEffectReducers<S>, RS>
     }
 }
 
+export type ExportRequests<S, T  extends SliceCaseEffectReducers<S>> = {
+    [P in keyof T]: T[P]["request"]
+}
+
 export type ExportReducers<S, T  extends SliceCaseEffectReducers<S>> = {
     [P in keyof T]: T[P]["reducer"]
 }
