@@ -6,8 +6,7 @@ import {
     CaseReducerWithPrepare,
     Action, 
     Slice, 
-    ValidateSliceCaseReducers,
-    PrepareAction
+    ValidateSliceCaseReducers
  } from '@reduxjs/toolkit'
 import { ThunkAction } from 'redux-thunk'
 import { RequestException } from './request';
