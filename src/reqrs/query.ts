@@ -157,13 +157,13 @@ export function createQuery<
     });
 
     // TODO: type payload
-    const createEffect = (actionName:string) => (
+    const createEffect = (name:string, request:Request) => (
         payload: any,
     ): ThunkAction<void, ResultState, null, Action<string>> => async dispatch => {
         try {
             dispatch(slice.actions.loadingStart());
-            const response: any = {};
-            dispatch(slice.actions[actionName]({ ...payload, ...response }));
+            const response = await request(payload);
+            dispatch(slice.actions[name](response));
         } catch (err) {
             dispatch(slice.actions.loadingFailed((err as RequestException).errors));
             throw err;
@@ -172,9 +172,10 @@ export function createQuery<
 
     const effects: Record<string, Function> = {};
     if (effectReducers) {
-        Object.keys(effectReducers).forEach(reducerName => {
-            const effect = createEffect(reducerName);
-            effects[reducerName] = effect;
+        Object.keys(effectReducers).forEach(name => {
+            const { request } = effectReducers[name];
+            const effect = createEffect(name, request);
+            effects[name] = effect;
         });
     }
 
