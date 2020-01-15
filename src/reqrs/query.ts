@@ -33,6 +33,18 @@ export declare type ValidateSliceEffectCaseReducers<S, ACR extends SliceCaseEffe
     } : unknown;
 };
 
+export type CaseReducerEffects<P, S> = {
+    [T in keyof P]: P[T] extends {
+        request(payload: infer O): any;
+    } ? EffectCreatorWithPayload<O, S> : unknown
+}
+
+export interface EffectCreatorWithPayload<P, S> {
+    <PT extends P>(payload: PT): ThunkAction<void, S, null, Action<string>>;
+    (payload: P): ThunkAction<void, S, null, Action<string>>;
+    (): ThunkAction<void, S, null, Action<string>>;
+}
+
 export interface QueryOptions<
   State,
   CaseReducers extends SliceCaseReducers<State> = SliceCaseReducers<State>,
@@ -55,13 +67,11 @@ export type SliceCaseReducersWithLoading<State> = SliceCaseReducers<State> & Que
 
 export interface QuerySlice<
   State = any,
-  CaseReducers extends SliceCaseReducersWithLoading<State> = SliceCaseReducersWithLoading<State>,
-  EffectCaseReducers extends SliceCaseReducers<State> = SliceCaseReducers<State>,
+  CaseReducers extends SliceCaseReducers<State> = SliceCaseReducers<State>,
+  EffectCaseReducers extends SliceCaseEffectReducers<State> = SliceCaseEffectReducers<State>,
   ResultState = any
 > extends Slice<State, CaseReducers>{
-    effects: {
-        [Type in keyof EffectCaseReducers]: (payload: any) => ThunkAction<void, ResultState, null, Action<string>>
-    }
+    effects: CaseReducerEffects<EffectCaseReducers, ResultState>
 }
 
 interface InternalQueryState {
@@ -73,11 +83,23 @@ export type QueryState<State> = State & InternalQueryState;
 
 export type ReducersWithLoading<Reducers, State> = Reducers & QueryReducers<State>;
 
-export type RemapReducers<Reducers, State> = {
+export type RemapCaseReducers<Reducers, State> = {
     [Type in keyof Reducers]: 
-        | CaseReducer<State, PayloadAction<any>>
+        CaseReducer<State, PayloadAction<any>>
         | CaseReducerWithPrepare<State, PayloadAction<any>>
 }
+
+export type RemapCaseEffectReducers<T, S> = {
+    [P in keyof T]: {
+        reducer: CaseReducer<S, PayloadAction<any>> | CaseReducerWithPrepare<S, PayloadAction<any>>,
+        request: ExportType<T[P], "reducer">
+    }
+}
+
+export type ExportReducers<T> = {
+    [P in keyof T]: ExportType<T[P], "reducer">
+}
+export type ExportType<T extends any, P extends string> = T[P]
 
 export function createQuery<
     State, 
@@ -85,11 +107,9 @@ export function createQuery<
     EffectCaseReducers extends SliceCaseEffectReducers<State>, 
     ResultState = any>(
         options: QueryOptions<State, CaseReducers, EffectCaseReducers>
-    ): QuerySlice<QueryState<State>, 
-    ReducersWithLoading<RemapReducers<CaseReducers & EffectCaseReducers, QueryState<State>>, 
-    QueryState<State>>, RemapReducers<EffectCaseReducers, QueryState<State>>, ResultState> {
+    ): QuerySlice<State, CaseReducers & ExportReducers<EffectCaseReducers>, EffectCaseReducers, ResultState> {
 
-    const { name, initialState, request, reducers, effectReducers } = options;
+    const { name, initialState, reducers, effectReducers } = options;
 
     // monkeypatch reducers
     const enhanceReducers = (reducers:SliceCaseReducers<State>):SliceCaseReducers<QueryState<State>> => 
@@ -154,7 +174,7 @@ export function createQuery<
 
     return { 
         name: slice.name, 
-        reducer: slice.reducer, 
+        reducer: slice.reducer as any, 
         caseReducers: slice.caseReducers as any, 
         actions: slice.actions as any, 
         effects: effects as any 
