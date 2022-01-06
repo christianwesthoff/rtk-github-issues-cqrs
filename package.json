@@ -15,7 +15,7 @@
     "@types/webpack-env": "^1.15.0",
     "axios": "^0.19.1",
     "classnames": "^2.2.6",
-    "parse-link-header": "^1.0.1",
+    "parse-link-header": "^2.0.0",
     "react": "^16.9.0",
     "react-dom": "^16.9.0",
     "react-markdown": "^4.3.1",
